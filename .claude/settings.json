@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(node -e \"const c=require\\('crypto'\\);const g=\\(\\)=>c.randomBytes\\(32\\).toString\\('hex'\\);console.log\\('ENCRYPTION_KEY='+g\\(\\)\\);console.log\\('HASH_SECRET='+g\\(\\)\\);console.log\\('SESSION_SECRET='+g\\(\\)\\);console.log\\('SHOPIFY_API_SECRET='+g\\(\\)\\);\")",
+      "Bash(docker --version)",
+      "Bash(docker compose *)",
+      "PowerShell($d = Get-Command docker -ErrorAction SilentlyContinue; if \\($d\\) { \"docker: $\\($d.Source\\)\"; docker --version } else { \"docker: NOT FOUND\" }; $p = Get-Command psql -ErrorAction SilentlyContinue; if \\($p\\) { \"psql: $\\($p.Source\\)\" } else { \"psql: NOT FOUND\" }; \"--- port 5432 ---\"; \\(Test-NetConnection -ComputerName localhost -Port 5432 -WarningAction SilentlyContinue\\).TcpTestSucceeded)",
+      "Bash(node -e ' *)",
+      "Bash(npx tsc *)",
+      "Bash(xargs -I{} echo {})",
+      "Bash(node -e \"const i=require\\('@shopify/polaris-icons'\\); console.log\\(Object.keys\\(i\\).filter\\(k=>/check/i.test\\(k\\)\\)\\)\")",
+      "Bash(PGPASSWORD=test123 psql -h localhost -p 5432 -U postgres -d cod_risk_scorer -c \"select shop_domain, plan, created_at, deleted_at from stores order by created_at desc limit 10;\")",
+      "Bash(node -e \"console.log\\(require\\('pg/package.json'\\).version\\)\")",
+      "Bash(grep -rln \"test-store\" src/)",
+      "Bash(find . -iname \"*seed*\" -not -path \"./node_modules/*\" -not -path \"./frontend/node_modules/*\")",
+      "Bash(grep -n \"APP_URL\\\\|HOST\" .env)",
+      "Bash(grep -n \"application_url\\\\|redirect_urls\\\\|client_id\" shopify.app.toml)",
+      "Bash(npx shopify *)",
+      "Bash(node scripts/seed-store.js codguard-dev-4u3qeq31.myshopify.com)"
+    ]
+  }
+}
