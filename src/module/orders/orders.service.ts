@@ -140,6 +140,7 @@ export class OrdersService {
     shopDomain: string,
     filter: OrdersFilterDto,
   ): Promise<PaginatedResponseDto<OrderResponseDto>> {
+    this.logger.debug(`list: shop=${shopDomain} page=${filter.page} limit=${filter.limit} risk=${filter.riskLevel ?? '*'} outcome=${filter.outcome ?? '*'}`);
     const [records, total] = await this.ordersRepository.findForDashboard(
       shopDomain,
       filter,
@@ -190,6 +191,7 @@ export class OrdersService {
    * order id), and keeps a local record so it can be listed in Settings.
    */
   async addManualRto(shopDomain: string, phoneRaw: string): Promise<OrderResponseDto> {
+    this.logger.log(`addManualRto: shop=${shopDomain}`);
     const normalized = normalizePhone(phoneRaw);
     if (!normalized) {
       throw new BusinessRuleFailureException(
@@ -236,6 +238,7 @@ export class OrdersService {
    * game another store's risk signal for the same number).
    */
   async removeManualRto(shopDomain: string, id: string): Promise<void> {
+    this.logger.log(`removeManualRto: id=${id} shop=${shopDomain}`);
     const record = await this.ordersRepository.findOne({
       where: { id, shopDomain, isManual: true },
     });

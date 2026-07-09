@@ -9,8 +9,23 @@
  */
 require('dotenv').config();
 const { Client } = require('pg');
+const crypto = require('crypto');
+
+/** Mirrors EncryptionService.encrypt so the stored token passes decrypt() without crashing. */
+function encryptToken(value) {
+  const key = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const encrypted = Buffer.concat([cipher.update(value, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return `${iv.toString('hex')}:${tag.toString('hex')}:${encrypted.toString('hex')}`;
+}
 
 const shop = process.argv[2] || 'test-store.myshopify.com';
+// Optionally pass a real Admin API access token as the third argument so
+// Shopify API calls (scan, billing, tagging) work in dev without full OAuth.
+//   node scripts/seed-store.js my-store.myshopify.com shpat_realtoken
+const realToken = process.argv[3] ?? null;
 
 (async () => {
   const client = new Client({
@@ -22,20 +37,26 @@ const shop = process.argv[2] || 'test-store.myshopify.com';
   });
   await client.connect();
 
-  // access_token is a placeholder — GET endpoints don't decrypt it; only real
-  // Shopify calls (tagging/scan) would, which aren't exercised in Tier 2.
+  const encryptedToken = encryptToken(realToken ?? 'seed-placeholder-token');
+  if (realToken) {
+    console.log('Using real token — Shopify API calls will work.');
+  } else {
+    console.log('Using placeholder token — UI works but scan/billing will 401.');
+  }
+
   await client.query(
     `INSERT INTO stores
        (shop_domain, access_token, plan, rto_signals, rto_tags,
         onboarding_complete, terms_accepted, monthly_order_count)
      VALUES ($1, $2, 'free', $3::jsonb, $4::text[], false, false, 0)
      ON CONFLICT (shop_domain) DO UPDATE
-       SET rto_signals = EXCLUDED.rto_signals,
-           rto_tags    = EXCLUDED.rto_tags,
-           deleted_at  = NULL`,
+       SET access_token = EXCLUDED.access_token,
+           rto_signals  = EXCLUDED.rto_signals,
+           rto_tags     = EXCLUDED.rto_tags,
+           deleted_at   = NULL`,
     [
       shop,
-      'seed-placeholder-token',
+      encryptedToken,
       JSON.stringify(['CANCELLED', 'TAG', 'REFUNDED']),
       ['rto', 'returned', 'wapas'],
     ],

@@ -64,7 +64,9 @@ export class StoreService {
 
   /** Settings view for the embedded app (token excluded, limits/features derived). */
   async getSettings(shopDomain: string): Promise<StoreResponseDto> {
+    this.logger.debug(`getSettings: ${shopDomain}`);
     const store = await this.findByDomainOrThrow(shopDomain);
+    this.logger.debug(`getSettings: found plan=${store.plan} onboarded=${store.onboardingComplete}`);
     return this.toResponseDto(store);
   }
 

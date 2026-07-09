@@ -77,12 +77,22 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       }
     }
 
-    // Unknown / non-HTTP error — never leak internals to the client.
+    // Unknown / non-HTTP error.
+    // In dev expose the real message so the UI shows something actionable;
+    // in production always return a generic message (never leak internals).
+    const isDev = process.env.NODE_ENV !== 'production';
+    const realMessage =
+      exception instanceof Error
+        ? `${exception.constructor.name}: ${exception.message}`
+        : String(exception);
+
     return [
       {
         name: 'INTERNAL_SERVER_ERROR',
         message:
-          status >= HttpStatus.INTERNAL_SERVER_ERROR
+          isDev
+            ? realMessage
+            : status >= HttpStatus.INTERNAL_SERVER_ERROR
             ? 'An unexpected error occurred'
             : String((exception as Error)?.message ?? 'Error'),
       },

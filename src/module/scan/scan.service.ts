@@ -63,6 +63,7 @@ export class ScanService {
     shopDomain: string,
     dateRangeDays: number,
   ): Promise<ScanPreviewResponseDto> {
+    this.logger.log(`preview: shop=${shopDomain} dateRangeDays=${dateRangeDays}`);
     const { store, session } = await this.getStoreSession(shopDomain);
     this.assertSignalsConfigured(store);
 
@@ -132,6 +133,7 @@ export class ScanService {
     shopDomain: string,
     dateRangeDays: number,
   ): Promise<{ totalScanned: number; rtoProcessed: number }> {
+    this.logger.log(`rescan: shop=${shopDomain} dateRangeDays=${dateRangeDays}`);
     const store = await this.storeService.findByDomainOrThrow(shopDomain);
     if (!PLAN_FEATURES[store.plan].rescan) {
       throw new ForbiddenException('Re-scan requires the GROWTH or PRO plan');

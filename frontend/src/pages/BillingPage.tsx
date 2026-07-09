@@ -120,14 +120,14 @@ export default function BillingPage() {
                     )}
                   </BlockStack>
 
-                  <BlockStack gap="200">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
                     {def.features.map((feature) => (
-                      <InlineStack key={feature} gap="200" blockAlign="start" wrap={false}>
+                      <InlineStack key={feature} gap="200" blockAlign="center" wrap={false}>
                         <Icon source={CheckIcon} tone="success" />
                         <Text as="span">{feature}</Text>
                       </InlineStack>
                     ))}
-                  </BlockStack>
+                  </div>
 
                   <Button
                     variant={isCurrent ? 'secondary' : 'primary'}

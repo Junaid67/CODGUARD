@@ -28,11 +28,6 @@ export class ShopifyAuthService {
       throw new BusinessRuleFailureException('Invalid shop domain', 'INVALID_SHOP');
     }
 
-    console.log(shopify.config.hostScheme);
-console.log(shopify.config.hostName);
-console.log(shopify.config.apiKey);
-
-
     await shopify.auth.begin({
       shop: sanitized,
       callbackPath: '/api/v1/auth/callback',
@@ -40,12 +35,7 @@ console.log(shopify.config.apiKey);
       rawRequest: req,
       rawResponse: res,
     });
-    console.log("after", shopify.config.hostScheme);
-  console.log(shopify.config.hostName);
-  console.log(shopify.config.apiKey);
   }
-
-    
 
   /**
    * Step 2: handle the OAuth callback — exchange code for an offline token,
@@ -54,11 +44,6 @@ console.log(shopify.config.apiKey);
    */
   async callback(req: Request, res: Response): Promise<void> {
     const shopify = this.shopifyService.getInstance();
-
-    
-    console.log("callback", shopify.config.hostScheme);
-console.log(shopify.config.hostName);
-console.log(shopify.config.apiKey);
 
     const { session } = await shopify.auth.callback({
       rawRequest: req,

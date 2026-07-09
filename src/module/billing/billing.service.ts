@@ -49,6 +49,7 @@ export class BillingService {
     shopDomain: string,
     plan: PlanEnum,
   ): Promise<BillingResponseDto> {
+    this.logger.log(`createSubscription: plan=${plan} shop=${shopDomain}`);
     const store = await this.storeService.findByDomainOrThrow(shopDomain);
 
     if (plan === PlanEnum.FREE) {
@@ -195,6 +196,7 @@ export class BillingService {
 
   /** Current billing view. */
   async getCurrentBilling(shopDomain: string): Promise<BillingResponseDto> {
+    this.logger.debug(`getCurrentBilling: ${shopDomain}`);
     const store = await this.storeService.findByDomainOrThrow(shopDomain);
     const latest = await this.billingRepository.findLatestByShop(shopDomain);
     return {
