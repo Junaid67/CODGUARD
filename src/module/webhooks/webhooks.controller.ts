@@ -12,6 +12,7 @@ import { WebhookHmacGuard } from '../../core/guards';
 import { Public } from '../../core/decorators';
 import { ROUTES } from '../../app.routes';
 import { OrderCreatedHandler } from './handlers/order-created.handler';
+import { OrderUpdatedHandler } from './handlers/order-updated.handler';
 import { OrderCancelledHandler } from './handlers/order-cancelled.handler';
 import { RefundCreatedHandler } from './handlers/refund-created.handler';
 import { AppUninstalledHandler } from './handlers/app-uninstalled.handler';
@@ -39,6 +40,7 @@ import {
 export class WebhooksController {
   constructor(
     private readonly orderCreated: OrderCreatedHandler,
+    private readonly orderUpdated: OrderUpdatedHandler,
     private readonly orderCancelled: OrderCancelledHandler,
     private readonly refundCreated: RefundCreatedHandler,
     private readonly appUninstalled: AppUninstalledHandler,
@@ -52,6 +54,16 @@ export class WebhooksController {
     @Body() order: ShopifyOrderPayload,
   ): Promise<{ received: boolean }> {
     await this.orderCreated.handle(shop, order);
+    return { received: true };
+  }
+
+  @Post('orders/updated')
+  @HttpCode(HttpStatus.OK)
+  async ordersUpdated(
+    @Headers('x-shopify-shop-domain') shop: string,
+    @Body() order: ShopifyOrderPayload,
+  ): Promise<{ received: boolean }> {
+    await this.orderUpdated.handle(shop, order);
     return { received: true };
   }
 

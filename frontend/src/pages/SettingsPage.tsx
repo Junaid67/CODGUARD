@@ -35,6 +35,7 @@ export default function SettingsPage() {
 
   const [signals, setSignals] = useState<RtoSignal[]>([]);
   const [tags, setTags] = useState<string[]>([]);
+  const [noteKeywords, setNoteKeywords] = useState<string[]>([]);
   const [savingSignals, setSavingSignals] = useState(false);
   const [signalsBanner, setSignalsBanner] = useState<{ tone: 'success' | 'critical'; message: string } | null>(null);
 
@@ -53,6 +54,7 @@ export default function SettingsPage() {
         setSettings(storeSettings);
         setSignals(storeSettings.rtoSignals);
         setTags(storeSettings.rtoTags);
+        setNoteKeywords(storeSettings.rtoNoteKeywords ?? []);
         setManualEntries(manual);
       })
       .catch((err) => setLoadError(getApiErrorMessage(err, 'Could not load settings')))
@@ -63,7 +65,7 @@ export default function SettingsPage() {
     setSavingSignals(true);
     setSignalsBanner(null);
     try {
-      const updated = await updateStoreSettings(signals, tags);
+      const updated = await updateStoreSettings(signals, tags, noteKeywords);
       setSettings(updated);
       setSignalsBanner({ tone: 'success', message: 'RTO detection settings saved.' });
     } catch (err) {
@@ -148,10 +150,12 @@ export default function SettingsPage() {
             <Step1Signals
               signals={signals}
               tags={tags}
+              noteKeywords={noteKeywords}
               courierAllowed={settings.features.courierIntegration}
-              onChange={(nextSignals, nextTags) => {
+              onChange={(nextSignals, nextTags, nextKeywords) => {
                 setSignals(nextSignals);
                 setTags(nextTags);
+                setNoteKeywords(nextKeywords);
               }}
             />
             <InlineStack align="end">

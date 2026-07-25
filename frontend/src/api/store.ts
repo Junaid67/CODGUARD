@@ -10,10 +10,12 @@ export async function getStoreSettings(): Promise<StoreSettings> {
 export async function updateStoreSettings(
   rtoSignals: RtoSignal[],
   rtoTags: string[],
+  rtoNoteKeywords: string[] = [],
 ): Promise<StoreSettings> {
   const res = await api.put<ApiSuccess<StoreSettings>>('/store/settings', {
     rtoSignals,
     rtoTags,
+    rtoNoteKeywords,
   });
   return unwrap(res.data);
 }

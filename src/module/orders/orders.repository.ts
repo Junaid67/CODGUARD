@@ -32,6 +32,52 @@ export class OrdersRepository extends Repository<OrderRecordEntity> {
     });
   }
 
+  /**
+   * Aggregated dashboard overview counts for one store. Manual entries are
+   * excluded — they are merchant-entered phone flags, not real orders.
+   */
+  async getStats(shopDomain: string): Promise<{
+    totalOrders: number;
+    pending: number;
+    delivered: number;
+    rto: number;
+    highRisk: number;
+    mediumRisk: number;
+    lowRisk: number;
+    unknownRisk: number;
+    rtoLossPrevented: number;
+  }> {
+    const raw = await this.createQueryBuilder('o')
+      .select('COUNT(*)', 'totalOrders')
+      .addSelect(`SUM(CASE WHEN o.outcome = 'PENDING' THEN 1 ELSE 0 END)`, 'pending')
+      .addSelect(`SUM(CASE WHEN o.outcome = 'DELIVERED' THEN 1 ELSE 0 END)`, 'delivered')
+      .addSelect(`SUM(CASE WHEN o.outcome = 'RTO' THEN 1 ELSE 0 END)`, 'rto')
+      .addSelect(`SUM(CASE WHEN o.risk_level = 'high' THEN 1 ELSE 0 END)`, 'highRisk')
+      .addSelect(`SUM(CASE WHEN o.risk_level = 'medium' THEN 1 ELSE 0 END)`, 'mediumRisk')
+      .addSelect(`SUM(CASE WHEN o.risk_level = 'low' THEN 1 ELSE 0 END)`, 'lowRisk')
+      .addSelect(`SUM(CASE WHEN o.risk_level = 'unknown' THEN 1 ELSE 0 END)`, 'unknownRisk')
+      .addSelect(
+        `COALESCE(SUM(CASE WHEN o.risk_level = 'high' AND o.outcome = 'RTO' THEN o.order_total ELSE 0 END), 0)`,
+        'rtoLossPrevented',
+      )
+      .where('o.shop_domain = :shopDomain', { shopDomain })
+      .andWhere('o.is_manual = false')
+      .getRawOne<Record<string, string>>();
+
+    const num = (key: string): number => Number(raw?.[key] ?? 0);
+    return {
+      totalOrders: num('totalOrders'),
+      pending: num('pending'),
+      delivered: num('delivered'),
+      rto: num('rto'),
+      highRisk: num('highRisk'),
+      mediumRisk: num('mediumRisk'),
+      lowRisk: num('lowRisk'),
+      unknownRisk: num('unknownRisk'),
+      rtoLossPrevented: num('rtoLossPrevented'),
+    };
+  }
+
   /** Paginated, filtered listing for the dashboard — always scoped to one store. */
   async findForDashboard(
     shopDomain: string,

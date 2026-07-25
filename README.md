@@ -57,5 +57,8 @@ npm run migration:revert
   - [x] onboarding (signal selection w/ plan-gating, terms acceptance, status/next-step)
   - [x] billing (appSubscriptionCreate w/ 14-day trial, return callback, subscription sync)
   - [x] orders (upsert/outcome persistence, dashboard list, mark/bulk RTO+delivered, masked phones)
-  - [x] webhooks (HMAC-guarded: order-created, order-cancelled, refund-created, app-uninstalled, subscription-updated)
-  - [x] scan (Bulk Operations API: preview, confirm, rescan; signal matching)
+  - [x] webhooks (HMAC-guarded: order-created, order-updated, order-cancelled, refund-created, app-uninstalled, subscription-updated)
+  - [x] scan (Bulk Operations API: preview, confirm, rescan; signal matching incl. note keywords)
+  - [x] reconciliation (6-hourly safety sync of recently-updated orders — catches missed webhooks)
+- [x] **Step 6** — Outcome automation: orders/updated detects RTO (cancelled/refunded/tag/note signals) and DELIVERED (shipment delivered, or COD paid + fulfilled) automatically; risk level mirrored to a `codguard.risk_level` order metafield
+- [x] **Step 7** — Dashboard overview stats (`GET /orders/stats`) + customer-intelligence phone lookup (`POST /risk/score`)

@@ -16,7 +16,7 @@ import {
 } from '../../shared/exceptions';
 import { PLAN_FEATURES } from '../../shared/constants';
 import { OrderOutcomeEnum, RtoSignalEnum } from '../../shared/enums';
-import { maskPhone, normalizePhone } from '../../shared/utils';
+import { maskPhone, matchRtoSignals, normalizePhone } from '../../shared/utils';
 
 /** Order node shape returned by the bulk orders query. */
 interface BulkOrderNode {
@@ -27,6 +27,7 @@ interface BulkOrderNode {
   displayFinancialStatus?: string | null;
   displayFulfillmentStatus?: string | null;
   tags?: string[];
+  note?: string | null;
   totalPriceSet?: { shopMoney?: { amount?: string; currencyCode?: string } };
   customer?: { firstName?: string; lastName?: string; phone?: string | null } | null;
   shippingAddress?: { phone?: string | null; name?: string | null } | null;
@@ -198,30 +199,20 @@ export class ScanService {
 
   /** Classifies orders against the store's configured signals. */
   private classify(orders: BulkOrderNode[], store: StoreEntity): ClassifiedOrder[] {
-    const signals = store.rtoSignals ?? [];
-    const tags = (store.rtoTags ?? []).map((t) => t.toLowerCase());
     const result: ClassifiedOrder[] = [];
 
     for (const node of orders) {
-      const matched: RtoSignalEnum[] = [];
-
-      if (signals.includes(RtoSignalEnum.CANCELLED) && node.cancelledAt) {
-        matched.push(RtoSignalEnum.CANCELLED);
-      }
-      if (
-        signals.includes(RtoSignalEnum.REFUNDED) &&
-        ['REFUNDED', 'PARTIALLY_REFUNDED'].includes(
-          (node.displayFinancialStatus ?? '').toUpperCase(),
-        )
-      ) {
-        matched.push(RtoSignalEnum.REFUNDED);
-      }
-      if (
-        signals.includes(RtoSignalEnum.TAG) &&
-        (node.tags ?? []).some((t) => tags.includes(t.toLowerCase()))
-      ) {
-        matched.push(RtoSignalEnum.TAG);
-      }
+      const matched: RtoSignalEnum[] = matchRtoSignals(
+        {
+          cancelledAt: node.cancelledAt,
+          financialStatus: node.displayFinancialStatus,
+          tags: node.tags,
+          note: node.note,
+        },
+        store.rtoSignals,
+        store.rtoTags,
+        store.rtoNoteKeywords,
+      );
 
       if (matched.length > 0) {
         result.push({
@@ -249,7 +240,7 @@ export class ScanService {
     const innerQuery = `{
       orders(query: "created_at:>=${since}") {
         edges { node {
-          id name createdAt cancelledAt displayFinancialStatus displayFulfillmentStatus tags
+          id name createdAt cancelledAt displayFinancialStatus displayFulfillmentStatus tags note
           totalPriceSet { shopMoney { amount currencyCode } }
           customer { firstName lastName phone }
           shippingAddress { phone name }

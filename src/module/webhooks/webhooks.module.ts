@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { WebhooksController } from './webhooks.controller';
 import { OrderCreatedHandler } from './handlers/order-created.handler';
+import { OrderUpdatedHandler } from './handlers/order-updated.handler';
 import { OrderCancelledHandler } from './handlers/order-cancelled.handler';
 import { RefundCreatedHandler } from './handlers/refund-created.handler';
 import { AppUninstalledHandler } from './handlers/app-uninstalled.handler';
@@ -20,6 +21,7 @@ import { BillingModule } from '../billing/billing.module';
   controllers: [WebhooksController],
   providers: [
     OrderCreatedHandler,
+    OrderUpdatedHandler,
     OrderCancelledHandler,
     RefundCreatedHandler,
     AppUninstalledHandler,

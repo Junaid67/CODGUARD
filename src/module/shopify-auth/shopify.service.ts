@@ -26,6 +26,7 @@ export class ShopifyService {
   /** Webhook topics registered on install, with their handler paths. */
   static readonly WEBHOOK_TOPICS: { topic: string; path: string }[] = [
     { topic: 'ORDERS_CREATE', path: 'orders/create' },
+    { topic: 'ORDERS_UPDATED', path: 'orders/updated' },
     { topic: 'ORDERS_CANCELLED', path: 'orders/cancelled' },
     { topic: 'REFUNDS_CREATE', path: 'refunds/create' },
     { topic: 'APP_UNINSTALLED', path: 'app/uninstalled' },
@@ -138,7 +139,8 @@ export class ShopifyService {
 
   /**
    * Sets the COD risk tag on an order, removing any other cod-risk:* tags so a
-   * single, current risk tag remains. `riskLevel` is the enum value
+   * single, current risk tag remains, and mirrors the risk level into a
+   * `codguard.risk_level` order metafield (§10). `riskLevel` is the enum value
    * (low/medium/high/unknown).
    */
   async setRiskTag(
@@ -170,5 +172,39 @@ export class ShopifyService {
       }`,
       { id: orderGid, tags: [desired] },
     );
+    await this.setRiskMetafield(session, orderGid, riskLevel);
+  }
+
+  /** Best-effort: metafield failure must not fail tagging or the webhook. */
+  private async setRiskMetafield(
+    session: Session,
+    orderGid: string,
+    riskLevel: string,
+  ): Promise<void> {
+    try {
+      await this.graphql(
+        session,
+        `mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+          metafieldsSet(metafields: $metafields) {
+            userErrors { field message }
+          }
+        }`,
+        {
+          metafields: [
+            {
+              ownerId: orderGid,
+              namespace: 'codguard',
+              key: 'risk_level',
+              type: 'single_line_text_field',
+              value: riskLevel,
+            },
+          ],
+        },
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Risk metafield set failed for ${orderGid}: ${(err as Error).message}`,
+      );
+    }
   }
 }

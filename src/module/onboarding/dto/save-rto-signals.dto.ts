@@ -35,4 +35,16 @@ export class SaveRtoSignalsDto {
   @IsString({ each: true })
   @MaxLength(50, { each: true })
   tags?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['refused', 'customer denied', 'wapas'],
+    description: 'Keywords matched against order notes (NOTE signal)',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  noteKeywords?: string[];
 }

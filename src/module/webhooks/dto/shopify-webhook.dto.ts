@@ -17,6 +17,12 @@ export interface ShopifyCustomer {
   last_name?: string | null;
 }
 
+export interface ShopifyFulfillment {
+  status?: string | null;
+  shipment_status?: string | null;
+  tracking_number?: string | null;
+}
+
 export interface ShopifyOrderPayload {
   id: number | string;
   name?: string;
@@ -31,6 +37,9 @@ export interface ShopifyOrderPayload {
   total_price?: string | null;
   currency?: string | null;
   tags?: string | null;
+  note?: string | null;
+  cancelled_at?: string | null;
+  fulfillments?: ShopifyFulfillment[] | null;
   created_at?: string | null;
 }
 

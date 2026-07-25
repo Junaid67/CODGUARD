@@ -7,7 +7,7 @@
 
 client_id = "bc6e84eda93cbd4d158a8174ac09eb4c"
 name = "CODGuard"
-application_url = "https://example.com"
+application_url = "https://supporters-abstract-hull-super.trycloudflare.com"
 embedded = true
 
 [access_scopes]
@@ -19,7 +19,7 @@ optional_scopes = [ ]
 use_legacy_install_flow = true
 
 [auth]
-redirect_urls = [ "https://example.com/api/v1/auth/callback" ]
+redirect_urls = [ "https://supporters-abstract-hull-super.trycloudflare.com/api/v1/auth/callback" ]
 
 [webhooks]
 api_version = "2026-04"

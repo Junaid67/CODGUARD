@@ -23,6 +23,7 @@ export interface OnboardingStatus {
 export interface SaveRtoSignalsPayload {
   signals: RtoSignal[];
   tags?: string[];
+  noteKeywords?: string[];
 }
 
 export interface AcceptTermsPayload {

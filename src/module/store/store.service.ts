@@ -79,10 +79,16 @@ export class StoreService {
 
     if (dto.rtoSignals !== undefined) store.rtoSignals = dto.rtoSignals;
     if (dto.rtoTags !== undefined) store.rtoTags = dto.rtoTags;
+    if (dto.rtoNoteKeywords !== undefined) store.rtoNoteKeywords = dto.rtoNoteKeywords;
 
     const saved = await this.storeRepository.save(store);
     this.logger.log(`Settings updated for ${shopDomain}`);
     return this.toResponseDto(saved);
+  }
+
+  /** Active (non-deleted) stores that completed onboarding — reconciliation targets. */
+  findAllOnboarded(): Promise<StoreEntity[]> {
+    return this.storeRepository.find({ where: { onboardingComplete: true } });
   }
 
   /** Resets the monthly order counter (called at the start of a new month). */

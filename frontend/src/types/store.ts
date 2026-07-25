@@ -15,6 +15,7 @@ export interface StoreSettings {
   plan: 'free' | 'starter' | 'growth' | 'pro';
   rtoSignals: RtoSignal[];
   rtoTags: string[];
+  rtoNoteKeywords: string[] | null;
   onboardingComplete: boolean;
   termsAccepted: boolean;
   termsAcceptedAt: string | null;

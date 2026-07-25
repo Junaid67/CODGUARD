@@ -3,6 +3,7 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { OrdersFilterDto } from './dto/orders-filter.dto';
 import { OrderResponseDto } from './dto/order-response.dto';
+import { OrderStatsResponseDto } from './dto/order-stats-response.dto';
 import { MarkRtoDto } from './dto/mark-rto.dto';
 import { BulkMarkRtoDto } from './dto/bulk-mark-rto.dto';
 import { AddManualRtoDto } from './dto/add-manual-rto.dto';
@@ -27,6 +28,14 @@ export class OrdersController {
     @Query() filter: OrdersFilterDto,
   ) {
     const result = await this.ordersService.list(shopDomain, filter);
+    return constructSuccessResponse(result);
+  }
+
+  @Get('stats')
+  @ApiOperation({ summary: 'Dashboard overview metrics' })
+  @ApiOkResponse({ type: OrderStatsResponseDto })
+  async stats(@ShopDomain() shopDomain: string) {
+    const result = await this.ordersService.getStats(shopDomain);
     return constructSuccessResponse(result);
   }
 

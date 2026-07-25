@@ -37,6 +37,30 @@ export interface OrdersFilter {
   search?: string;
 }
 
+export interface OrderStats {
+  totalOrders: number;
+  pending: number;
+  delivered: number;
+  rto: number;
+  highRisk: number;
+  mediumRisk: number;
+  lowRisk: number;
+  unknownRisk: number;
+  acceptanceRate: number | null;
+  rejectionRate: number | null;
+  estimatedRtoLossPrevented: number;
+}
+
+export interface RiskScore {
+  riskLevel: RiskLevel;
+  deliveryRate: number | null;
+  totalOrders: number;
+  deliveredCount?: number;
+  rtoCount?: number;
+  contributingStores?: number;
+  message?: string;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;

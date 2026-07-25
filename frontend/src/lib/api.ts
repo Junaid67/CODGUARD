@@ -55,6 +55,26 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+// With the legacy install flow, "install" IS the OAuth grant: when the backend
+// has no row for this shop (404 Store not found), the app must break out of
+// the iframe and start OAuth so the callback can create the store + token.
+let oauthRedirectStarted = false;
+
+function redirectToOAuth(shop: string): void {
+  oauthRedirectStarted = true;
+  // VITE_API_URL may be relative ("/api/v1") or absolute; resolve it against
+  // our own origin so the top-window navigation targets our app host, not the
+  // Shopify admin origin the iframe is embedded in.
+  const base = new URL(import.meta.env.VITE_API_URL || '/api/v1', window.location.origin);
+  const authUrl = new URL(`${base.pathname.replace(/\/$/, '')}/auth`, base.origin);
+  authUrl.searchParams.set('shop', shop);
+  if (DEV) console.warn(`[API] Store not registered — starting OAuth: ${authUrl.href}`);
+  // OAuth cannot run inside the embedded iframe. App Bridge v4 patches
+  // window.open so target "_top" navigates the admin's top window — direct
+  // window.top.location assignment is silently blocked cross-origin.
+  window.open(authUrl.href, '_top');
+}
+
 // Log responses and errors in dev so every API call is visible in DevTools.
 api.interceptors.response.use(
   (response) => {
@@ -69,6 +89,18 @@ api.interceptors.response.use(
       const body = error.response?.data ?? error.message;
       console.error(`[API ✗] ${status} ${error.config?.url}`, body);
     }
+
+    const firstError = error.response?.data?.errors?.[0];
+    const shop = getShopDomain();
+    if (
+      !oauthRedirectStarted &&
+      shop &&
+      error.response?.status === 404 &&
+      firstError?.message?.startsWith('Store not found')
+    ) {
+      redirectToOAuth(shop);
+    }
+
     return Promise.reject(error);
   },
 );

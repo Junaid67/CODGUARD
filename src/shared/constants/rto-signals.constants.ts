@@ -26,6 +26,13 @@ export const RTO_SIGNAL_DEFINITIONS: RtoSignalDefinition[] = [
     isCourier: false,
   },
   {
+    signal: RtoSignalEnum.NOTE,
+    label: 'Order note text',
+    description:
+      'Treat orders whose note contains your keywords (e.g. refused, rto, wapas) as RTO',
+    isCourier: false,
+  },
+  {
     signal: RtoSignalEnum.REFUNDED,
     label: 'Order refunded',
     description: 'Treat refunded orders as RTO',

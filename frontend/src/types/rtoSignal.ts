@@ -1,6 +1,7 @@
 export enum RtoSignal {
   CANCELLED = 'CANCELLED',
   TAG = 'TAG',
+  NOTE = 'NOTE',
   REFUNDED = 'REFUNDED',
   COURIER_LEOPARDS = 'COURIER_LEOPARDS',
   COURIER_TCS = 'COURIER_TCS',
@@ -20,6 +21,7 @@ export interface RtoSignalDefinition {
 export const RTO_SIGNAL_DEFINITIONS: RtoSignalDefinition[] = [
   { signal: RtoSignal.CANCELLED, label: 'Order cancelled', description: 'Treat cancelled orders as RTO', isCourier: false },
   { signal: RtoSignal.TAG, label: 'Order tag', description: 'Treat orders with your RTO tags (e.g. rto, returned, wapas) as RTO', isCourier: false },
+  { signal: RtoSignal.NOTE, label: 'Order note text', description: 'Treat orders whose note contains your keywords (e.g. refused, rto, wapas) as RTO', isCourier: false },
   { signal: RtoSignal.REFUNDED, label: 'Order refunded', description: 'Treat refunded orders as RTO', isCourier: false },
   { signal: RtoSignal.MANUAL, label: 'Manual marking', description: 'RTO marked manually by you in the dashboard', isCourier: false },
   { signal: RtoSignal.COURIER_LEOPARDS, label: 'Leopards courier', description: 'Auto-detect RTO from Leopards courier status (PRO)', isCourier: true },

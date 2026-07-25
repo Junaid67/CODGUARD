@@ -25,6 +25,9 @@ export class StoreEntity extends BaseEntity {
   @Column({ name: 'rto_tags', type: 'text', array: true, nullable: true })
   rtoTags: string[]; // e.g. ['rto', 'returned', 'wapas']
 
+  @Column({ name: 'rto_note_keywords', type: 'text', array: true, nullable: true })
+  rtoNoteKeywords: string[]; // e.g. ['refused', 'customer denied', 'wapas']
+
   @Column({ name: 'onboarding_complete', default: false })
   onboardingComplete: boolean;
 

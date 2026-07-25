@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { CoreModule } from './core';
 import { DatabaseModule } from './database/database.module';
@@ -13,6 +14,7 @@ import { BillingModule } from './module/billing/billing.module';
 import { OrdersModule } from './module/orders/orders.module';
 import { WebhooksModule } from './module/webhooks/webhooks.module';
 import { ScanModule } from './module/scan/scan.module';
+import { ReconciliationModule } from './module/reconciliation/reconciliation.module';
 
 /**
  * Root application module.
@@ -43,6 +45,7 @@ import { ScanModule } from './module/scan/scan.module';
     CoreModule,
     DatabaseModule,
     SharedModule,
+    ScheduleModule.forRoot(),
     StoreModule,
     AuditModule,
     ContributionsModule,
@@ -53,6 +56,7 @@ import { ScanModule } from './module/scan/scan.module';
     OrdersModule,
     WebhooksModule,
     ScanModule,
+    ReconciliationModule,
   ],
   controllers: [AppController],
   providers: [],

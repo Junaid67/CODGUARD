@@ -25,6 +25,10 @@ export class StoreResponseDto {
   @Expose()
   rtoTags: string[];
 
+  @ApiProperty({ type: [String], nullable: true })
+  @Expose()
+  rtoNoteKeywords: string[];
+
   @ApiProperty()
   @Expose()
   onboardingComplete: boolean;

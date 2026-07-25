@@ -5,6 +5,7 @@ import { OrdersRepository } from './orders.repository';
 import { OrderRecordEntity } from './entity/order-record.entity';
 import { OrdersFilterDto } from './dto/orders-filter.dto';
 import { OrderResponseDto } from './dto/order-response.dto';
+import { OrderStatsResponseDto } from './dto/order-stats-response.dto';
 import { EncryptionService } from '../../core/services';
 import { RiskService } from '../risk/risk.service';
 import { StoreService } from '../store/store.service';
@@ -15,7 +16,13 @@ import {
 } from '../../shared/exceptions';
 import { PaginatedResponseDto } from '../../shared/dtos';
 import { OrderOutcomeEnum, RiskLevelEnum } from '../../shared/enums';
-import { maskPhone, normalizePhone } from '../../shared/utils';
+import {
+  AppUtil,
+  isDeliveredState,
+  maskPhone,
+  matchRtoSignals,
+  normalizePhone,
+} from '../../shared/utils';
 
 /** Fields needed to persist/refresh a local order record (from webhook/scan). */
 export interface OrderUpsertInput {
@@ -32,6 +39,28 @@ export interface OrderUpsertInput {
   shopifyTags?: string[];
   shopifyFinancialStatus?: string | null;
   shopifyFulfillmentStatus?: string | null;
+  orderTotal?: number | null;
+  currency?: string | null;
+  shopifyCreatedAt?: Date | null;
+}
+
+/**
+ * Normalized "current state" of a Shopify order, used by orders/updated
+ * webhooks and the reconciliation job to refresh the local record and detect
+ * outcomes. Shapes from REST webhooks and GraphQL both map into this.
+ */
+export interface OrderStateSnapshot {
+  shopifyOrderId: string;
+  orderNumber?: string | null;
+  customerName?: string | null;
+  phoneRaw?: string | null;
+  email?: string | null;
+  tags?: string[];
+  note?: string | null;
+  financialStatus?: string | null;
+  fulfillmentStatus?: string | null;
+  cancelledAt?: string | null;
+  shipmentDelivered?: boolean;
   orderTotal?: number | null;
   currency?: string | null;
   shopifyCreatedAt?: Date | null;
@@ -114,6 +143,108 @@ export class OrdersService {
     return true;
   }
 
+  /**
+   * Syncs an order's current Shopify state into the local record and detects
+   * its delivery outcome (§6–§8): refreshes tags/note/statuses, applies the
+   * store's RTO signals, and — for still-PENDING orders — records RTO or
+   * DELIVERED into the shared phone profile. Idempotent: an order whose
+   * outcome is already decided is only refreshed, never re-recorded.
+   */
+  async syncOrderState(
+    shopDomain: string,
+    snapshot: OrderStateSnapshot,
+  ): Promise<void> {
+    const store = await this.storeService.findByDomain(shopDomain);
+    if (!store) return;
+
+    let record = await this.ordersRepository.findByShopAndOrderId(
+      shopDomain,
+      snapshot.shopifyOrderId,
+    );
+
+    if (!record) {
+      // First sight of this order (missed orders/create or pre-install order):
+      // score the phone and create the record now.
+      const normalized = snapshot.phoneRaw ? normalizePhone(snapshot.phoneRaw) : null;
+      let riskLevel = RiskLevelEnum.UNKNOWN;
+      let deliveryRate: number | null = null;
+      let phoneHash: string | null = null;
+      let phoneEncrypted: string | null = null;
+
+      if (normalized) {
+        const score = await this.riskService.scorePhone(normalized);
+        riskLevel = score.riskLevel;
+        deliveryRate = score.deliveryRate;
+        phoneHash = this.encryptionService.hash(normalized);
+        phoneEncrypted = this.encryptionService.encrypt(normalized);
+      }
+
+      record = await this.upsert({
+        shopDomain,
+        shopifyOrderId: snapshot.shopifyOrderId,
+        orderNumber: snapshot.orderNumber ?? snapshot.shopifyOrderId,
+        customerName: snapshot.customerName,
+        phoneHash,
+        phoneEncrypted,
+        email: snapshot.email,
+        riskLevel,
+        deliveryRateAtOrderTime: deliveryRate,
+        outcome: OrderOutcomeEnum.PENDING,
+        shopifyTags: snapshot.tags ?? [],
+        shopifyFinancialStatus: snapshot.financialStatus,
+        shopifyFulfillmentStatus: snapshot.fulfillmentStatus,
+        orderTotal: snapshot.orderTotal,
+        currency: snapshot.currency,
+        shopifyCreatedAt: snapshot.shopifyCreatedAt,
+      });
+    } else {
+      // Refresh the mutable Shopify state on the existing record.
+      record.shopifyTags = snapshot.tags ?? record.shopifyTags;
+      record.shopifyFinancialStatus =
+        snapshot.financialStatus ?? record.shopifyFinancialStatus;
+      record.shopifyFulfillmentStatus =
+        snapshot.fulfillmentStatus ?? record.shopifyFulfillmentStatus;
+      record = await this.ordersRepository.save(record);
+    }
+
+    // Outcomes are only decided once — manual/webhook decisions stand.
+    if (record.outcome !== OrderOutcomeEnum.PENDING) return;
+
+    const matched = matchRtoSignals(
+      {
+        cancelledAt: snapshot.cancelledAt,
+        financialStatus: snapshot.financialStatus,
+        tags: snapshot.tags,
+        note: snapshot.note,
+      },
+      store.rtoSignals,
+      store.rtoTags,
+      store.rtoNoteKeywords,
+    );
+
+    if (matched.length > 0) {
+      await this.applyOutcomeToRecord(shopDomain, record, OrderOutcomeEnum.RTO);
+      this.logger.log(
+        `Order ${snapshot.shopifyOrderId} (${shopDomain}) → RTO via ${matched.join(',')}`,
+      );
+    } else if (
+      isDeliveredState({
+        financialStatus: snapshot.financialStatus,
+        fulfillmentStatus: snapshot.fulfillmentStatus,
+        shipmentDelivered: snapshot.shipmentDelivered,
+      })
+    ) {
+      await this.applyOutcomeToRecord(
+        shopDomain,
+        record,
+        OrderOutcomeEnum.DELIVERED,
+      );
+      this.logger.log(
+        `Order ${snapshot.shopifyOrderId} (${shopDomain}) → DELIVERED`,
+      );
+    }
+  }
+
   /** Tags an order with the given risk level (best-effort; errors logged). */
   async tagOrderRisk(
     shopDomain: string,
@@ -151,6 +282,21 @@ export class OrdersService {
       filter.page,
       filter.limit,
     );
+  }
+
+  /** Dashboard overview metrics (§11). */
+  async getStats(shopDomain: string): Promise<OrderStatsResponseDto> {
+    const stats = await this.ordersRepository.getStats(shopDomain);
+    const decided = stats.delivered + stats.rto;
+
+    return {
+      ...stats,
+      acceptanceRate:
+        decided > 0 ? AppUtil.round2((stats.delivered / decided) * 100) : null,
+      rejectionRate:
+        decided > 0 ? AppUtil.round2((stats.rto / decided) * 100) : null,
+      estimatedRtoLossPrevented: AppUtil.round2(stats.rtoLossPrevented),
+    };
   }
 
   /** Manually mark an order RTO: record the outcome, persist, and re-tag. */

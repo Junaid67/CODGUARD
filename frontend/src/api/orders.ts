@@ -1,5 +1,5 @@
 import { api, unwrap, ApiSuccess } from '../lib/api';
-import { OrderRecord, OrdersFilter, PaginatedResponse } from '../types/order';
+import { OrderRecord, OrderStats, OrdersFilter, PaginatedResponse } from '../types/order';
 
 function cleanParams(filter: OrdersFilter): Record<string, string | number> {
   const params: Record<string, string | number> = { page: filter.page, limit: filter.limit };
@@ -9,6 +9,11 @@ function cleanParams(filter: OrdersFilter): Record<string, string | number> {
   if (filter.dateTo) params.dateTo = filter.dateTo;
   if (filter.search) params.search = filter.search;
   return params;
+}
+
+export async function getOrderStats(): Promise<OrderStats> {
+  const res = await api.get<ApiSuccess<OrderStats>>('/orders/stats');
+  return unwrap(res.data);
 }
 
 export async function listOrders(

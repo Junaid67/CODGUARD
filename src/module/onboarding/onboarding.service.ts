@@ -59,9 +59,21 @@ export class OnboardingService {
       );
     }
 
+    // NOTE signal implies at least one keyword to match against order notes.
+    if (
+      dto.signals.includes(RtoSignalEnum.NOTE) &&
+      (!dto.noteKeywords || dto.noteKeywords.length === 0)
+    ) {
+      throw new BusinessRuleFailureException(
+        'Add at least one keyword when the note-text signal is enabled',
+        'NOTE_KEYWORDS_REQUIRED',
+      );
+    }
+
     await this.storeService.updateSettings(shopDomain, {
       rtoSignals: dto.signals,
       rtoTags: dto.tags ?? [],
+      rtoNoteKeywords: dto.noteKeywords ?? [],
     });
 
     this.logger.log(`Signals saved for ${shopDomain}`);

@@ -18,7 +18,14 @@
       "Bash(grep -n \"APP_URL\\\\|HOST\" .env)",
       "Bash(grep -n \"application_url\\\\|redirect_urls\\\\|client_id\" shopify.app.toml)",
       "Bash(npx shopify *)",
-      "Bash(node scripts/seed-store.js codguard-dev-4u3qeq31.myshopify.com)"
+      "Bash(node scripts/seed-store.js codguard-dev-4u3qeq31.myshopify.com)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(node -e \"console.log\\(require\\('@nestjs/schedule/package.json'\\).version\\)\")",
+      "Bash(node -e \"console.log\\(require\\('cron/package.json'\\).version, require\\('luxon/package.json'\\).version\\)\")",
+      "Bash(echo \"BACKEND_EXIT:$?\")",
+      "Bash(echo \"FRONTEND_EXIT:$?\")",
+      "Bash(node \"/c/Users/junai/AppData/Local/Temp/claude/d--AI-Projects-CODGuard/9b4d687a-3541-43f4-bc6e-56139628ed78/scratchpad/check-migrations.js\")",
+      "Bash(node scripts/check-migrations.js)"
     ]
   }
 }

@@ -18,14 +18,16 @@ import { getApiErrorMessage } from '../../lib/api';
 interface Props {
   signals: RtoSignal[];
   tags: string[];
+  noteKeywords: string[];
   courierAllowed: boolean;
-  onChange: (signals: RtoSignal[], tags: string[]) => void;
+  onChange: (signals: RtoSignal[], tags: string[], noteKeywords: string[]) => void;
 }
 
-export function Step1Signals({ signals, tags, courierAllowed, onChange }: Props) {
+export function Step1Signals({ signals, tags, noteKeywords, courierAllowed, onChange }: Props) {
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [tagToAdd, setTagToAdd] = useState('');
   const [customTag, setCustomTag] = useState('');
+  const [keywordToAdd, setKeywordToAdd] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -36,17 +38,27 @@ export function Step1Signals({ signals, tags, courierAllowed, onChange }: Props)
 
   function toggleSignal(signal: RtoSignal, checked: boolean) {
     const next = checked ? [...signals, signal] : signals.filter((s) => s !== signal);
-    onChange(next, tags);
+    onChange(next, tags, noteKeywords);
   }
 
   function addTag(tag: string) {
     const trimmed = tag.trim();
     if (!trimmed || tags.includes(trimmed)) return;
-    onChange(signals, [...tags, trimmed]);
+    onChange(signals, [...tags, trimmed], noteKeywords);
   }
 
   function removeTag(tag: string) {
-    onChange(signals, tags.filter((t) => t !== tag));
+    onChange(signals, tags.filter((t) => t !== tag), noteKeywords);
+  }
+
+  function addKeyword(keyword: string) {
+    const trimmed = keyword.trim();
+    if (!trimmed || noteKeywords.includes(trimmed)) return;
+    onChange(signals, tags, [...noteKeywords, trimmed]);
+  }
+
+  function removeKeyword(keyword: string) {
+    onChange(signals, tags, noteKeywords.filter((k) => k !== keyword));
   }
 
   const tagSelectOptions = [
@@ -142,6 +154,54 @@ export function Step1Signals({ signals, tags, courierAllowed, onChange }: Props)
           {tags.length === 0 && (
             <Text as="p" tone="subdued">
               Select at least one tag — required when the "Order tag" signal is enabled.
+            </Text>
+          )}
+        </BlockStack>
+      )}
+
+      {signals.includes(RtoSignal.NOTE) && (
+        <BlockStack gap="300">
+          <Text as="h3" variant="headingSm">
+            Which note keywords mean RTO?
+          </Text>
+          <Text as="p" tone="subdued">
+            Orders whose note contains any of these words (case-insensitive) are treated as RTO.
+          </Text>
+
+          <InlineStack gap="200" blockAlign="end">
+            <div style={{ minWidth: 240 }}>
+              <TextField
+                label="Add a keyword"
+                value={keywordToAdd}
+                onChange={setKeywordToAdd}
+                autoComplete="off"
+                placeholder="e.g. refused, customer denied, wapas"
+              />
+            </div>
+            <Button
+              onClick={() => {
+                addKeyword(keywordToAdd);
+                setKeywordToAdd('');
+              }}
+              disabled={!keywordToAdd.trim()}
+            >
+              Add
+            </Button>
+          </InlineStack>
+
+          {noteKeywords.length > 0 && (
+            <InlineStack gap="200">
+              {noteKeywords.map((keyword) => (
+                <Tag key={keyword} onRemove={() => removeKeyword(keyword)}>
+                  {keyword}
+                </Tag>
+              ))}
+            </InlineStack>
+          )}
+
+          {noteKeywords.length === 0 && (
+            <Text as="p" tone="subdued">
+              Add at least one keyword — required when the note-text signal is enabled.
             </Text>
           )}
         </BlockStack>

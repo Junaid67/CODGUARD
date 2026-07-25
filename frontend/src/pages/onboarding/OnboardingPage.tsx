@@ -24,6 +24,7 @@ export default function OnboardingPage() {
 
   const [signals, setSignals] = useState<RtoSignal[]>([]);
   const [tags, setTags] = useState<string[]>([]);
+  const [noteKeywords, setNoteKeywords] = useState<string[]>([]);
 
   const [dateRangeDays, setDateRangeDays] = useState(180);
   const [excludedOrderIds, setExcludedOrderIds] = useState<Set<string>>(new Set());
@@ -40,6 +41,7 @@ export default function OnboardingPage() {
         setCourierAllowed(settings.features.courierIntegration);
         setSignals(settings.rtoSignals ?? []);
         setTags(settings.rtoTags ?? []);
+        setNoteKeywords(settings.rtoNoteKeywords ?? []);
 
         if (status.nextStep === OnboardingStep.COMPLETE) {
           navigate('/orders', { replace: true });
@@ -57,7 +59,7 @@ export default function OnboardingPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await saveRtoSignals({ signals, tags });
+      await saveRtoSignals({ signals, tags, noteKeywords });
       setStep(2);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Could not save your signals'));
@@ -93,7 +95,10 @@ export default function OnboardingPage() {
   }
 
   const tagSignalRequiresTags = signals.includes(RtoSignal.TAG) && tags.length === 0;
-  const canProceedStep1 = signals.length > 0 && !tagSignalRequiresTags;
+  const noteSignalRequiresKeywords =
+    signals.includes(RtoSignal.NOTE) && noteKeywords.length === 0;
+  const canProceedStep1 =
+    signals.length > 0 && !tagSignalRequiresTags && !noteSignalRequiresKeywords;
 
   return (
     <Page title="Onboarding" subtitle={`Step ${step} of 5: ${STEP_LABELS[step - 1]}`}>
@@ -107,10 +112,12 @@ export default function OnboardingPage() {
             <Step1Signals
               signals={signals}
               tags={tags}
+              noteKeywords={noteKeywords}
               courierAllowed={courierAllowed}
-              onChange={(s, t) => {
+              onChange={(s, t, k) => {
                 setSignals(s);
                 setTags(t);
+                setNoteKeywords(k);
               }}
             />
           )}
